@@ -1,7 +1,7 @@
-package com.core.service;
+package com.business.services;
 
-import com.core.model.User;
-import com.core.model.Wallet;
+import com.business.entities.AccountHolder;
+import com.business.entities.FinancialAccount;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FileService {
+public class DataPersistenceService {
     private static final Path DATA_FILE_PATH = Paths.get("users.data");
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -22,7 +22,7 @@ public class FileService {
         JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    public void save(Map<String, User> users) {
+    public void save(Map<String, AccountHolder> users) {
         if (users == null || users.isEmpty()) {
             System.out.println("⚠️  Нет данных для сохранения.");
             return;
@@ -45,7 +45,7 @@ public class FileService {
         }
     }
 
-    public Map<String, User> load() {
+    public Map<String, AccountHolder> load() {
         if (!Files.exists(DATA_FILE_PATH)) {
             System.out.println("ℹ️  Файл данных не найден, будет создан новый.");
             return new HashMap<>();
@@ -54,7 +54,7 @@ public class FileService {
         try (ObjectInputStream ois = new ObjectInputStream(
                 new FileInputStream(DATA_FILE_PATH.toFile()))) {
             @SuppressWarnings("unchecked")
-            Map<String, User> users = (Map<String, User>) ois.readObject();
+            Map<String, AccountHolder> users = (Map<String, AccountHolder>) ois.readObject();
             System.out.println("✅ Данные загружены из файла: " + DATA_FILE_PATH.toAbsolutePath());
             return users;
         } catch (FileNotFoundException e) {
@@ -70,26 +70,26 @@ public class FileService {
         return new HashMap<>();
     }
 
-    public void saveJSON(User user, String filename) {
-        if (user == null) {
+    public void saveJSON(AccountHolder accountHolder, String filename) {
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не указан.");
             return;
         }
 
         if (filename == null || filename.trim().isEmpty()) {
-            filename = user.getUsername() + ".json";
+            filename = accountHolder.getUsername() + ".json";
         }
 
         File file = new File(filename);
         try {
-            JSON_MAPPER.writeValue(file, user);
+            JSON_MAPPER.writeValue(file, accountHolder);
             System.out.println("✅ Данные сохранены в JSON файл: " + file.getAbsolutePath());
         } catch (IOException e) {
             System.err.println("❌ Ошибка при сохранении JSON: " + e.getMessage());
         }
     }
 
-    public User loadJSON(File file) {
+    public AccountHolder loadJSON(File file) {
         if (file == null || !file.exists()) {
             System.out.println("❌ Файл не найден: " +
                     (file != null ? file.getPath() : "null"));
@@ -102,28 +102,28 @@ public class FileService {
         }
 
         try {
-            User user = JSON_MAPPER.readValue(file, User.class);
+            AccountHolder accountHolder = JSON_MAPPER.readValue(file, AccountHolder.class);
 
             // Валидация загруженного пользователя
-            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            if (accountHolder.getUsername() == null || accountHolder.getUsername().trim().isEmpty()) {
                 System.out.println("❌ Неверный формат JSON: отсутствует имя пользователя.");
                 return null;
             }
 
-            if (user.getWallet() == null) {
-                user.setWallet(new Wallet());
+            if (accountHolder.getFinancialAccount() == null) {
+                accountHolder.setFinancialAccount(new FinancialAccount());
                 System.out.println("⚠️  Кошелек пользователя не найден, создан новый.");
             }
 
             System.out.println("✅ JSON файл успешно загружен: " + file.getName());
-            return user;
+            return accountHolder;
         } catch (IOException e) {
             System.err.println("❌ Ошибка при чтении JSON файла: " + e.getMessage());
             return null;
         }
     }
 
-    public void backupData(Map<String, User> users) {
+    public void backupData(Map<String, AccountHolder> users) {
         if (users == null || users.isEmpty()) {
             System.out.println("⚠️  Нет данных для резервного копирования.");
             return;

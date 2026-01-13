@@ -1,4 +1,4 @@
-package com.core.model;
+package com.business.entities;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
-public class Transaction implements Serializable {
+public class FinancialEntry implements Serializable {
     private static final long serialVersionUID = 1L;
     private Double amount;
     private String category;
     private Boolean isIncome;
     private LocalDateTime timestamp;
 
-    public Transaction(Double amount, String category, Boolean isIncome) {
+    public FinancialEntry(Double amount, String category, Boolean isIncome) {
         this.amount = amount;
         this.category = category;
         this.isIncome = isIncome;
@@ -26,7 +26,7 @@ public class Transaction implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Transaction t = (Transaction) o;
+        FinancialEntry t = (FinancialEntry) o;
         return t.getCategory().equals(this.category)
                 && t.getAmount().equals(this.amount)
                 && t.getTimestamp().equals(this.timestamp)

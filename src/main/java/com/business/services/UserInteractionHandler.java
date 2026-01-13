@@ -1,12 +1,12 @@
-package com.core.service;
+package com.business.services;
 
-import com.cli.ShowcaseService;
-import com.core.exception.CategoryNotFound;
-import com.core.exception.PasswordNotFoundException;
-import com.core.exception.UserAlreadyCreatedException;
-import com.core.exception.UserNotFoundException;
-import com.core.model.Transaction;
-import com.core.model.User;
+import com.business.exception.CategoryMissingException;
+import com.business.exception.PasswordMismatchException;
+import com.business.exception.UserAlreadyExistsException;
+import com.business.exception.UserMissingException;
+import com.business.entities.FinancialEntry;
+import com.business.entities.AccountHolder;
+import com.interf.DisplayService;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -15,23 +15,21 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeSet;
 
-public class HandleService {
-    private final LoginService loginService;
-    private final BalanceService balanceService;
+public class UserInteractionHandler {
+    private final AuthenticationService authenticationService;
+    private final FinancialOperationsService financialOperationsService;
     private final Scanner scanner;
-    private final FileService fileService;
-    private final ShowcaseService showcaseService;
+    private final DataPersistenceService dataPersistenceService;
+    private final DisplayService displayService;
 
-    public HandleService(LoginService loginService, BalanceService balanceService,
-                         Scanner scanner, FileService fileService, ShowcaseService showcaseService) {
-        this.loginService = loginService;
-        this.balanceService = balanceService;
+    public UserInteractionHandler(AuthenticationService authenticationService, FinancialOperationsService financialOperationsService,
+                                  Scanner scanner, DataPersistenceService dataPersistenceService, DisplayService displayService) {
+        this.authenticationService = authenticationService;
+        this.financialOperationsService = financialOperationsService;
         this.scanner = scanner;
-        this.fileService = fileService;
-        this.showcaseService = showcaseService;
+        this.dataPersistenceService = dataPersistenceService;
+        this.displayService = displayService;
     }
 
     // Метод изображения меню регистрации
@@ -51,7 +49,7 @@ public class HandleService {
                 handleLoadJson();
                 break;
             case "5":
-                showcaseService.showHelpMenu();
+                displayService.showHelpMenu();
                 handleHelpMenu();
                 break;
             default:
@@ -63,10 +61,10 @@ public class HandleService {
         String param = scanner.nextLine().trim();
         switch (param) {
             case "1":
-                showcaseService.printHelp();
+                displayService.printHelp();
                 break;
             case "2":
-                showcaseService.printExamples();
+                displayService.printExamples();
                 break;
             case "3":
                 break;
@@ -79,7 +77,7 @@ public class HandleService {
         System.out.print("Сохранить данные перед выходом? (Y/N): ");
         String answer = scanner.nextLine().trim().toUpperCase();
         if (answer.equals("Y") || answer.equals("ДА")) {
-            fileService.save(loginService.getUserMap());
+            dataPersistenceService.save(authenticationService.getUserMap());
             System.out.println("✅ Данные сохранены.");
         }
         System.out.println("👋 До свидания!");
@@ -105,12 +103,12 @@ public class HandleService {
         }
 
         try {
-            loginService.login(login, password);
+            authenticationService.login(login, password);
             System.out.println("✅ Вы успешно вошли в систему!");
             return true;
-        } catch (UserNotFoundException e) {
+        } catch (UserMissingException e) {
             System.out.println("❌ Пользователь не найден! Попробуйте другой аккаунт или зарегистрируйтесь.");
-        } catch (PasswordNotFoundException e) {
+        } catch (PasswordMismatchException e) {
             System.out.println("❌ Неверный пароль! Попробуйте еще раз.");
         }
         return false;
@@ -134,9 +132,9 @@ public class HandleService {
         }
 
         try {
-            loginService.registration(login, password);
+            authenticationService.registration(login, password);
             System.out.println("✅ Вы успешно зарегистрировались!");
-        } catch (UserAlreadyCreatedException e) {
+        } catch (UserAlreadyExistsException e) {
             System.out.println("❌ Такой пользователь уже существует!");
         } catch (IllegalArgumentException e) {
             System.out.println("❌ Ошибка: " + e.getMessage());
@@ -169,7 +167,7 @@ public class HandleService {
                 handleHelp();
                 break;
             case "8":
-                showcaseService.showAllTransactions(false);
+                displayService.showAllTransactions(false);
                 System.out.println("\nНажмите Enter для продолжения...");
                 scanner.nextLine();
                 break;
@@ -179,19 +177,19 @@ public class HandleService {
     }
 
     private void handleLogout() {
-        loginService.unLogin();
+        authenticationService.unLogin();
         System.out.println("✅ Вы вышли из аккаунта.");
     }
 
     private void handleHelp() {
-        showcaseService.showHelpMenu();
+        displayService.showHelpMenu();
         String help = scanner.nextLine().trim();
         switch (help) {
             case "1":
-                showcaseService.printHelp();
+                displayService.printHelp();
                 break;
             case "2":
-                showcaseService.printExamples();
+                displayService.printExamples();
                 break;
             case "3":
                 break;
@@ -201,7 +199,7 @@ public class HandleService {
     }
 
     private void handleJsons() {
-        showcaseService.showJsons();
+        displayService.showJsons();
         String param = scanner.nextLine().trim();
         switch (param) {
             case "1":
@@ -225,9 +223,9 @@ public class HandleService {
         switch (scanner.nextLine().trim().toUpperCase()) {
             case "Y":
             case "ДА":
-                String username = loginService.getCurrentUser().getUsername();
-                loginService.getUserMap().remove(username);
-                loginService.unLogin();
+                String username = authenticationService.getCurrentAccountHolder().getUsername();
+                authenticationService.getUserMap().remove(username);
+                authenticationService.unLogin();
                 System.out.println("✅ Пользователь '" + username + "' успешно удален.");
                 break;
             case "N":
@@ -241,8 +239,8 @@ public class HandleService {
 
     private void handleSaveJson() {
         try {
-            User currentUser = loginService.getCurrentUser();
-            if (currentUser == null) {
+            AccountHolder currentAccountHolder = authenticationService.getCurrentAccountHolder();
+            if (currentAccountHolder == null) {
                 System.out.println("❌ Ошибка: пользователь не авторизован!");
                 return;
             }
@@ -250,10 +248,10 @@ public class HandleService {
             System.out.print("Введите имя файла для сохранения (без расширения): ");
             String filename = scanner.nextLine().trim();
             if (filename.isEmpty()) {
-                filename = currentUser.getUsername();
+                filename = currentAccountHolder.getUsername();
             }
 
-            fileService.saveJSON(currentUser, filename + ".json");
+            dataPersistenceService.saveJSON(currentAccountHolder, filename + ".json");
             System.out.println("✅ Данные пользователя сохранены в файл: " + filename + ".json");
         } catch (Exception e) {
             System.out.println("❌ Ошибка при сохранении: " + e.getMessage());
@@ -275,32 +273,32 @@ public class HandleService {
         }
 
         try {
-            User loadedUser = fileService.loadJSON(file);
-            if (loadedUser == null) {
+            AccountHolder loadedAccountHolder = dataPersistenceService.loadJSON(file);
+            if (loadedAccountHolder == null) {
                 System.out.println("❌ Ошибка загрузки файла.");
                 return;
             }
 
-            Map<String, User> userMap = loginService.getUserMap();
-            if (userMap.containsKey(loadedUser.getUsername())) {
-                System.out.print("Пользователь '" + loadedUser.getUsername() +
+            Map<String, AccountHolder> userMap = authenticationService.getUserMap();
+            if (userMap.containsKey(loadedAccountHolder.getUsername())) {
+                System.out.print("Пользователь '" + loadedAccountHolder.getUsername() +
                         "' уже существует. Перезаписать? (Y/N): ");
                 String answer = scanner.nextLine().trim().toUpperCase();
                 if (answer.equals("Y") || answer.equals("ДА")) {
-                    userMap.put(loadedUser.getUsername(), loadedUser);
+                    userMap.put(loadedAccountHolder.getUsername(), loadedAccountHolder);
                     System.out.println("✅ Данные пользователя обновлены.");
 
                     // Если это текущий пользователь, обновляем его
-                    if (loginService.getCurrentUser() != null &&
-                            loginService.getCurrentUser().getUsername().equals(loadedUser.getUsername())) {
-                        loginService.setCurrentUser(loadedUser);
+                    if (authenticationService.getCurrentAccountHolder() != null &&
+                            authenticationService.getCurrentAccountHolder().getUsername().equals(loadedAccountHolder.getUsername())) {
+                        authenticationService.setCurrentAccountHolder(loadedAccountHolder);
                     }
                 } else {
                     System.out.println("Загрузка отменена.");
                 }
             } else {
-                userMap.put(loadedUser.getUsername(), loadedUser);
-                System.out.println("✅ Пользователь '" + loadedUser.getUsername() + "' успешно добавлен.");
+                userMap.put(loadedAccountHolder.getUsername(), loadedAccountHolder);
+                System.out.println("✅ Пользователь '" + loadedAccountHolder.getUsername() + "' успешно добавлен.");
             }
         } catch (Exception e) {
             System.out.println("❌ Ошибка при загрузке файла: " + e.getMessage());
@@ -309,8 +307,8 @@ public class HandleService {
 
     // Метод добавления дохода
     public void handleAddIncome() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
@@ -327,7 +325,7 @@ public class HandleService {
 
         try {
             double amount = Double.parseDouble(amountInput);
-            balanceService.addIncome(user, category, amount);
+            financialOperationsService.addIncome(accountHolder, category, amount);
             System.out.printf("✅ Добавлен доход: %s - %.2f%n", category, amount);
         } catch (NumberFormatException e) {
             System.out.println("❌ Ошибка: введите корректное число.");
@@ -337,7 +335,7 @@ public class HandleService {
     }
 
     public void handleTransactionMenu() {
-        showcaseService.showTransactionMenu();
+        displayService.showTransactionMenu();
         String param = scanner.nextLine().trim();
         switch (param) {
             case "1":
@@ -347,7 +345,7 @@ public class HandleService {
                 handleAddOutcome();
                 break;
             case "3":
-                showcaseService.showAllTransactions(false);
+                displayService.showAllTransactions(false);
                 System.out.println("\nНажмите Enter для продолжения...");
                 scanner.nextLine();
                 break;
@@ -366,8 +364,8 @@ public class HandleService {
 
     // Метод добавления расхода
     public void handleAddOutcome() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
@@ -384,12 +382,12 @@ public class HandleService {
 
         try {
             double amount = Double.parseDouble(amountInput);
-            balanceService.addOutcome(user, category, amount);
+            financialOperationsService.addOutcome(accountHolder, category, amount);
             System.out.printf("✅ Добавлен расход: %s - %.2f%n", category, amount);
 
             // Проверка бюджета после добавления расхода
-            if (user.getWallet().getBudget(category) != null) {
-                double remaining = balanceService.getBudgetCategory(user, category);
+            if (accountHolder.getFinancialAccount().getBudget(category) != null) {
+                double remaining = financialOperationsService.getBudgetCategory(accountHolder, category);
                 if (remaining < 0) {
                     System.out.println("⚠️  ВНИМАНИЕ: Превышен бюджет по категории '" + category + "'!");
                 } else if (remaining == 0) {
@@ -424,7 +422,7 @@ public class HandleService {
                 handleRemoveBudget();
                 break;
             case "3":
-                showcaseService.showCategories();
+                displayService.showCategories();
                 System.out.println("\nНажмите Enter для продолжения...");
                 scanner.nextLine();
                 break;
@@ -436,33 +434,33 @@ public class HandleService {
     }
 
     private void handleChangeTransaction() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
 
-        List<Transaction> transactions = user.getWallet().getTransactions();
-        if (transactions.isEmpty()) {
+        List<FinancialEntry> financialEntries = accountHolder.getFinancialAccount().getFinancialEntries();
+        if (financialEntries.isEmpty()) {
             System.out.println("❌ Список транзакций пуст!");
             return;
         }
 
         try {
-            showcaseService.showAllTransactions(false);
+            displayService.showAllTransactions(false);
             System.out.print("\nВведите номер транзакции для изменения: ");
             String transactionInput = scanner.nextLine().trim();
 
             int transactionIndex = Integer.parseInt(transactionInput) - 1;
-            if (transactionIndex < 0 || transactionIndex >= transactions.size()) {
+            if (transactionIndex < 0 || transactionIndex >= financialEntries.size()) {
                 System.out.println("❌ Неверный номер транзакции.");
                 return;
             }
 
-            Transaction transaction = transactions.get(transactionIndex);
+            FinancialEntry financialEntry = financialEntries.get(transactionIndex);
 
             while (true) {
-                showcaseService.showChangeTransaction();
+                displayService.showChangeTransaction();
                 String param = scanner.nextLine().trim();
 
                 switch (param) {
@@ -472,7 +470,7 @@ public class HandleService {
                         if (name.isEmpty()) {
                             System.out.println("❌ Категория не может быть пустой.");
                         } else {
-                            transaction.setCategory(name);
+                            financialEntry.setCategory(name);
                             System.out.println("✅ Категория изменена.");
                         }
                         break;
@@ -484,7 +482,7 @@ public class HandleService {
                             if (amount <= 0) {
                                 System.out.println("❌ Сумма должна быть положительной.");
                             } else {
-                                transaction.setAmount(amount);
+                                financialEntry.setAmount(amount);
                                 System.out.println("✅ Сумма изменена.");
                             }
                         } catch (NumberFormatException e) {
@@ -495,10 +493,10 @@ public class HandleService {
                         System.out.print("Введите новый тип (доход/расход): ");
                         String type = scanner.nextLine().trim().toLowerCase();
                         if (type.equals("доход")) {
-                            transaction.setIsIncome(true);
+                            financialEntry.setIsIncome(true);
                             System.out.println("✅ Тип изменен на 'доход'.");
                         } else if (type.equals("расход")) {
-                            transaction.setIsIncome(false);
+                            financialEntry.setIsIncome(false);
                             System.out.println("✅ Тип изменен на 'расход'.");
                         } else {
                             System.out.println("❌ Введите 'доход' или 'расход'.");
@@ -516,30 +514,30 @@ public class HandleService {
     }
 
     private void handleRemoveTransaction() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
 
-        List<Transaction> transactions = user.getWallet().getTransactions();
-        if (transactions.isEmpty()) {
+        List<FinancialEntry> financialEntries = accountHolder.getFinancialAccount().getFinancialEntries();
+        if (financialEntries.isEmpty()) {
             System.out.println("❌ Список транзакций пуст!");
             return;
         }
 
         try {
-            showcaseService.showAllTransactions(false);
+            displayService.showAllTransactions(false);
             System.out.print("\nВведите номер транзакции для удаления: ");
             String transactionInput = scanner.nextLine().trim();
 
             int transactionIndex = Integer.parseInt(transactionInput) - 1;
-            if (transactionIndex < 0 || transactionIndex >= transactions.size()) {
+            if (transactionIndex < 0 || transactionIndex >= financialEntries.size()) {
                 System.out.println("❌ Неверный номер транзакции.");
                 return;
             }
 
-            Transaction removed = transactions.remove(transactionIndex);
+            FinancialEntry removed = financialEntries.remove(transactionIndex);
             System.out.printf("✅ Транзакция №%d удалена: %s - %.2f%n",
                     (transactionIndex + 1), removed.getCategory(), removed.getAmount());
 
@@ -549,8 +547,8 @@ public class HandleService {
     }
 
     private void handleRemoveBudget() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
@@ -564,10 +562,10 @@ public class HandleService {
                 return;
             }
 
-            balanceService.removeBudget(user, category);
+            financialOperationsService.removeBudget(accountHolder, category);
             System.out.println("✅ Бюджет категории '" + category + "' удален.");
 
-        } catch (CategoryNotFound e) {
+        } catch (CategoryMissingException e) {
             System.out.println("❌ " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("❌ " + e.getMessage());
@@ -575,8 +573,8 @@ public class HandleService {
     }
 
     public void handleSetBudget() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
@@ -594,7 +592,7 @@ public class HandleService {
             String amountInput = scanner.nextLine().trim();
 
             double amount = Double.parseDouble(amountInput);
-            balanceService.setBudget(user, category, amount);
+            financialOperationsService.setBudget(accountHolder, category, amount);
             System.out.printf("✅ Бюджет для категории '%s' установлен: %.2f%n", category, amount);
 
         } catch (NumberFormatException e) {
@@ -606,14 +604,14 @@ public class HandleService {
 
     // Метод демонстрации статистики
     public void handleShowcaseTransaction() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
 
         try {
-            showcaseService.showAllTransactions(true);
+            displayService.showAllTransactions(true);
             String param = scanner.nextLine().trim();
             switch (param) {
                 case "1":
@@ -633,8 +631,8 @@ public class HandleService {
     }
 
     public void handleTransaction() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("❌ Ошибка: пользователь не авторизован!");
             return;
         }
@@ -648,12 +646,12 @@ public class HandleService {
                 return;
             }
 
-            if (username.equals(user.getUsername())) {
+            if (username.equals(accountHolder.getUsername())) {
                 System.out.println("❌ Нельзя перевести деньги самому себе.");
                 return;
             }
 
-            User recipient = loginService.getUserMap().get(username);
+            AccountHolder recipient = authenticationService.getUserMap().get(username);
             if (recipient == null) {
                 System.out.println("❌ Пользователь '" + username + "' не найден.");
                 return;
@@ -668,7 +666,7 @@ public class HandleService {
                 return;
             }
 
-            double currentBalance = balanceService.getCurrentBalance(user);
+            double currentBalance = financialOperationsService.getCurrentBalance(accountHolder);
             if (amount > currentBalance) {
                 System.out.printf("❌ Недостаточно средств. Доступно: %.2f%n", currentBalance);
                 return;
@@ -681,11 +679,11 @@ public class HandleService {
             }
 
             // Выполняем перевод
-            balanceService.addOutcome(user, description, amount);
-            balanceService.addIncome(recipient, "Перевод от " + user.getUsername(), amount);
+            financialOperationsService.addOutcome(accountHolder, description, amount);
+            financialOperationsService.addIncome(recipient, "Перевод от " + accountHolder.getUsername(), amount);
 
             System.out.printf("✅ Успешно переведено %.2f пользователю '%s'%n", amount, username);
-            System.out.printf("Ваш новый баланс: %.2f%n", balanceService.getCurrentBalance(user));
+            System.out.printf("Ваш новый баланс: %.2f%n", financialOperationsService.getCurrentBalance(accountHolder));
 
         } catch (NumberFormatException e) {
             System.out.println("❌ Введите корректное число.");
@@ -693,17 +691,17 @@ public class HandleService {
     }
 
     public void handleStatistic() {
-        showcaseService.showStatistic();
+        displayService.showStatistic();
         String cases = scanner.nextLine().trim();
         switch (cases) {
             case "1":
-                showcaseService.showAllStatistic();
+                displayService.showAllStatistic();
                 break;
             case "2":
                 handleStatisticByCategory();
                 break;
             case "3":
-                showcaseService.showCategories();
+                displayService.showCategories();
                 break;
             case "4":
                 break;
@@ -764,6 +762,6 @@ public class HandleService {
         String[] categories = categoriesInput.isEmpty() ?
                 new String[0] : categoriesInput.split(",\\s*");
 
-        showcaseService.showStatisticByCategory(firstTime, secondTime, categories);
+        displayService.showStatisticByCategory(firstTime, secondTime, categories);
     }
 }

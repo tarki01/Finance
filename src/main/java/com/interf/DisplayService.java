@@ -1,11 +1,11 @@
-package com.cli;
+package com.interf;
 
-import com.cli.enums.Examples;
-import com.cli.enums.Help;
-import com.core.model.Transaction;
-import com.core.model.User;
-import com.core.service.BalanceService;
-import com.core.service.LoginService;
+import com.interf.enums.OperationDescriptions;
+import com.interf.enums.UsageExamples;
+import com.business.entities.FinancialEntry;
+import com.business.entities.AccountHolder;
+import com.business.services.FinancialOperationsService;
+import com.business.services.AuthenticationService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -13,49 +13,49 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service for displaying user interface elements and statistics.
+ * Сервис для отображения элементов пользовательского интерфейса и статистики.
  */
-public class ShowcaseService {
+public class DisplayService {
     /**
-     * Login service instance.
+     * Экземпляр сервиса аутентификации.
      */
-    private LoginService loginService;
+    private AuthenticationService authenticationService;
 
     /**
-     * Constant for percent limit of the budget.
+     * Константа для процентного предела бюджета.
      */
     private static final int LIMIT_PERCENTAGE = 80;
 
     /**
-     * Balance service instance.
+     * Экземпляр сервиса финансовых операций.
      */
-    private BalanceService balanceService;
+    private FinancialOperationsService financialOperationsService;
 
     /**
-     * Format string for statistics.
+     * Строка формата для статистики.
      */
     private static final String REGEX_STATS = "%20s %n";
 
     /**
-     * Date formatter for display.
+     * Форматтер даты для отображения.
      */
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     /**
-     * Constructor for ShowcaseService.
+     * Конструктор для ShowcaseService.
      *
-     * @param loginServiceParam the login service
-     * @param balanceServiceParam the balance service
+     * @param authenticationServiceParam сервис аутентификации
+     * @param financialOperationsServiceParam сервис финансовых операций
      */
-    public ShowcaseService(final LoginService loginServiceParam,
-                           final BalanceService balanceServiceParam) {
-        this.loginService = loginServiceParam;
-        this.balanceService = balanceServiceParam;
+    public DisplayService(final AuthenticationService authenticationServiceParam,
+                          final FinancialOperationsService financialOperationsServiceParam) {
+        this.authenticationService = authenticationServiceParam;
+        this.financialOperationsService = financialOperationsServiceParam;
     }
 
     /**
-     * Displays the login menu.
+     * Отображает меню входа.
      */
     public void showLoginMenu() {
         System.out.println("\n" + "=".repeat(40));
@@ -71,18 +71,18 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays the main menu.
+     * Отображает главное меню.
      */
     public void showMainMenu() {
-        User currentUser = loginService.getCurrentUser();
+        AccountHolder currentAccountHolder = authenticationService.getCurrentAccountHolder();
         System.out.println("\n" + "=".repeat(40));
         System.out.println("        ГЛАВНОЕ МЕНЮ");
         System.out.println("=".repeat(40));
         System.out.println("Текущий пользователь: " +
-                (currentUser != null ? currentUser.getUsername() : "не авторизован"));
-        if (currentUser != null) {
+                (currentAccountHolder != null ? currentAccountHolder.getUsername() : "не авторизован"));
+        if (currentAccountHolder != null) {
             System.out.printf("Текущий баланс: %.2f%n",
-                    balanceService.getCurrentBalance(currentUser));
+                    financialOperationsService.getCurrentBalance(currentAccountHolder));
         }
         System.out.println("=".repeat(40));
         System.out.println("1. Управление транзакциями");
@@ -98,7 +98,7 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays JSON operations menu.
+     * Отображает меню операций с JSON.
      */
     public void showJsons() {
         System.out.println("\n" + "=".repeat(50));
@@ -113,7 +113,7 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays transaction operations menu.
+     * Отображает меню операций с транзакциями.
      */
     public void showTransactionMenu() {
         System.out.println("\n" + "=".repeat(40));
@@ -130,7 +130,7 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays transaction editing options.
+     * Отображает опции редактирования транзакции.
      */
     public void showChangeTransaction() {
         System.out.println("\n" + "=".repeat(40));
@@ -145,17 +145,17 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays all transactions for the current user with pagination.
+     * Отображает все транзакции для текущего пользователя с пагинацией.
      */
     public void showAllTransactions(boolean showActions) {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("Ошибка: пользователь не авторизован!");
             return;
         }
 
-        List<Transaction> transactions = user.getWallet().getTransactions();
-        if (transactions.isEmpty()) {
+        List<FinancialEntry> financialEntries = accountHolder.getFinancialAccount().getFinancialEntries();
+        if (financialEntries.isEmpty()) {
             System.out.println("\n" + "=".repeat(40));
             System.out.println("   СПИСОК ТРАНЗАКЦИЙ");
             System.out.println("=".repeat(40));
@@ -172,7 +172,7 @@ public class ShowcaseService {
         System.out.println("-".repeat(80));
 
         int index = 1;
-        for (Transaction t : transactions) {
+        for (FinancialEntry t : financialEntries) {
             String type = t.getIsIncome() ? "Доход" : "Расход";
             String sign = t.getIsIncome() ? "+" : "-";
             String formattedDate = t.getTimestamp().format(DATE_FORMATTER);
@@ -195,11 +195,11 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays all statistics for the current user.
+     * Отображает всю статистику для текущего пользователя.
      */
     public void showAllStatistic() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("Ошибка: пользователь не авторизован!");
             return;
         }
@@ -208,27 +208,27 @@ public class ShowcaseService {
         System.out.println("                  СТАТИСТИКА");
         System.out.println("=".repeat(60));
         System.out.println("\n--- Общие данные ---");
-        System.out.printf("Общая сумма доходов: %.2f%n", balanceService.getAllIncome(user));
-        System.out.printf("Общая сумма расходов: %.2f%n", balanceService.getAllOutcome(user));
-        System.out.printf("Текущий баланс: %.2f%n", balanceService.getCurrentBalance(user));
+        System.out.printf("Общая сумма доходов: %.2f%n", financialOperationsService.getAllIncome(accountHolder));
+        System.out.printf("Общая сумма расходов: %.2f%n", financialOperationsService.getAllOutcome(accountHolder));
+        System.out.printf("Текущий баланс: %.2f%n", financialOperationsService.getCurrentBalance(accountHolder));
 
-        if (balanceService.outcomeOverIncomeAll(user)) {
+        if (financialOperationsService.outcomeOverIncomeAll(accountHolder)) {
             System.out.println("\n⚠️  ВНИМАНИЕ: Расходы превышают доходы!");
         }
 
         System.out.println("\n--- Бюджеты ---");
-        printBudgets(user.getWallet().getBudgetsCategories());
+        printBudgets(accountHolder.getFinancialAccount().getBudgetsCategories());
 
         System.out.println("\n--- Доходы по категориям ---");
-        printIncomes(balanceService.getIncomeByCategory(user));
+        printIncomes(financialOperationsService.getIncomeByCategory(accountHolder));
 
         System.out.println("\n--- Расходы по категориям ---");
-        printOutcomes(balanceService.getOutcomeByCategory(user));
+        printOutcomes(financialOperationsService.getOutcomeByCategory(accountHolder));
         System.out.println("=".repeat(60));
     }
 
     /**
-     * Displays statistics menu.
+     * Отображает меню статистики.
      */
     public void showStatistic() {
         System.out.println("\n" + "=".repeat(40));
@@ -243,18 +243,18 @@ public class ShowcaseService {
     }
 
     /**
-     * Displays statistics by category and time period.
+     * Отображает статистику по категориям и периоду времени.
      *
-     * @param firstTime start time
-     * @param secondTime end time
-     * @param categories array of categories
+     * @param firstTime начальное время
+     * @param secondTime конечное время
+     * @param categories массив категорий
      */
     public void showStatisticByCategory(final LocalDateTime firstTime,
                                         final LocalDateTime secondTime,
                                         final String[] categories) {
         try {
-            User user = loginService.getCurrentUser();
-            if (user == null) {
+            AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+            if (accountHolder == null) {
                 System.out.println("Ошибка: пользователь не авторизован!");
                 return;
             }
@@ -262,16 +262,16 @@ public class ShowcaseService {
             Set<String> categoriesSet = new TreeSet<>(Arrays.asList(categories));
             if (categoriesSet.isEmpty() ||
                     (categoriesSet.size() == 1 && categoriesSet.iterator().next().isEmpty())) {
-                categoriesSet.addAll(user.getWallet().getBudgetsCategories().keySet());
+                categoriesSet.addAll(accountHolder.getFinancialAccount().getBudgetsCategories().keySet());
             }
 
             if (categoriesSet.isEmpty()) {
                 System.out.println("Категории не указаны и бюджеты не установлены.");
-                System.out.println("Доступные категории: " + balanceService.getAllCategories(user));
+                System.out.println("Доступные категории: " + financialOperationsService.getAllCategories(accountHolder));
                 return;
             }
 
-            Map<String, Double> budgets = user.getWallet()
+            Map<String, Double> budgets = accountHolder.getFinancialAccount()
                     .getBudgetsCategories().entrySet().stream()
                     .filter(e -> categoriesSet.contains(e.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -293,17 +293,17 @@ public class ShowcaseService {
                     .filter(cat -> !cat.isEmpty())
                     .collect(Collectors.toSet());
 
-            List<Transaction> list = balanceService.getTransactionByCategories(
-                    user, firstTime, secondTime, filteredCategories);
+            List<FinancialEntry> list = financialOperationsService.getTransactionByCategories(
+                    accountHolder, firstTime, secondTime, filteredCategories);
 
             if (list.isEmpty()) {
                 System.out.println("\nНет транзакций по выбранным категориям в указанный период.");
             } else {
                 Map<String, Double> mapOfIncomes = list.stream()
-                        .filter(Transaction::getIsIncome)
+                        .filter(FinancialEntry::getIsIncome)
                         .collect(Collectors.toMap(
-                                Transaction::getCategory,
-                                Transaction::getAmount,
+                                FinancialEntry::getCategory,
+                                FinancialEntry::getAmount,
                                 Double::sum,
                                 TreeMap::new
                         ));
@@ -314,8 +314,8 @@ public class ShowcaseService {
                 Map<String, Double> mapOfOutcomes = list.stream()
                         .filter(t -> !t.getIsIncome())
                         .collect(Collectors.toMap(
-                                Transaction::getCategory,
-                                Transaction::getAmount,
+                                FinancialEntry::getCategory,
+                                FinancialEntry::getAmount,
                                 Double::sum,
                                 TreeMap::new
                         ));
@@ -332,9 +332,9 @@ public class ShowcaseService {
     }
 
     /**
-     * Prints income statistics.
+     * Выводит статистику доходов.
      *
-     * @param getIncome map of categories to income amounts
+     * @param getIncome карта категорий к суммам доходов
      */
     public void printIncomes(final Map<String, Double> getIncome) {
         if (getIncome != null && !getIncome.isEmpty()) {
@@ -348,9 +348,9 @@ public class ShowcaseService {
     }
 
     /**
-     * Prints budget information.
+     * Выводит информацию о бюджетах.
      *
-     * @param budgets map of categories to budget amounts
+     * @param budgets карта категорий к суммам бюджетов
      */
     public void printBudgets(final Map<String, Double> budgets) {
         if (budgets != null && !budgets.isEmpty()) {
@@ -364,13 +364,13 @@ public class ShowcaseService {
     }
 
     /**
-     * Prints outcome statistics with budget information.
+     * Выводит статистику расходов с информацией о бюджетах.
      *
-     * @param getOutcome map of categories to outcome amounts
+     * @param getOutcome карта категорий к суммам расходов
      */
     public void printOutcomes(final Map<String, Double> getOutcome) {
-        User user = loginService.getCurrentUser();
-        if (user == null) return;
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) return;
 
         if (getOutcome != null && !getOutcome.isEmpty()) {
             System.out.printf("%-20s %-15s %-15s %-15s%n",
@@ -378,18 +378,18 @@ public class ShowcaseService {
             System.out.println("-".repeat(65));
 
             getOutcome.forEach((k, v) -> {
-                double budget = user.getWallet().getBudget(k) != null
-                        ? user.getWallet().getBudget(k) : 0.0;
-                double remaining = balanceService.getBudgetCategory(user, k);
+                double budget = accountHolder.getFinancialAccount().getBudget(k) != null
+                        ? accountHolder.getFinancialAccount().getBudget(k) : 0.0;
+                double remaining = financialOperationsService.getBudgetCategory(accountHolder, k);
                 System.out.printf("%-20s %-15.2f %-15.2f %-15.2f",
                         k, budget, v, remaining);
 
                 // Показываем предупреждения
-                if (balanceService.budgetOverLimit(user, k)) {
+                if (financialOperationsService.budgetOverLimit(accountHolder, k)) {
                     System.out.print(" ⚠️ ПЕРЕРАСХОД!");
-                } else if (balanceService.budgetIsZero(user, k)) {
+                } else if (financialOperationsService.budgetIsZero(accountHolder, k)) {
                     System.out.print(" ⚠️ Бюджет исчерпан!");
-                } else if (balanceService.budgetOverLimitPercent(user, k, LIMIT_PERCENTAGE)) {
+                } else if (financialOperationsService.budgetOverLimitPercent(accountHolder, k, LIMIT_PERCENTAGE)) {
                     System.out.print(" ⚠️ Осталось менее 20% бюджета!");
                 }
                 System.out.println();
@@ -400,17 +400,17 @@ public class ShowcaseService {
     }
 
     /**
-     * Shows available categories.
+     * Показывает доступные категории.
      */
     public void showCategories() {
-        User user = loginService.getCurrentUser();
-        if (user == null) {
+        AccountHolder accountHolder = authenticationService.getCurrentAccountHolder();
+        if (accountHolder == null) {
             System.out.println("Ошибка: пользователь не авторизован!");
             return;
         }
 
-        List<String> allCategories = balanceService.getAllCategories(user);
-        List<String> budgetCategories = balanceService.getBudgetCategories(user);
+        List<String> allCategories = financialOperationsService.getAllCategories(accountHolder);
+        List<String> budgetCategories = financialOperationsService.getBudgetCategories(accountHolder);
 
         System.out.println("\n" + "=".repeat(40));
         System.out.println("      ДОСТУПНЫЕ КАТЕГОРИИ");
@@ -428,7 +428,7 @@ public class ShowcaseService {
         if (!budgetCategories.isEmpty()) {
             System.out.println("Категории с установленным бюджетом:");
             budgetCategories.forEach(cat -> {
-                double budget = user.getWallet().getBudget(cat);
+                double budget = accountHolder.getFinancialAccount().getBudget(cat);
                 System.out.printf("  • %s (бюджет: %.2f)%n", cat, budget);
             });
         } else {
@@ -438,7 +438,7 @@ public class ShowcaseService {
     }
 
     /**
-     * Prints help information for all features.
+     * Выводит справочную информацию по всем функциям.
      */
     public void printHelp() {
         System.out.println("\n" + "=".repeat(60));
@@ -447,37 +447,37 @@ public class ShowcaseService {
 
         // --- Транзакции ---
         System.out.println("📊 ТРАНЗАКЦИИ:");
-        System.out.println("  " + Help.TRANSACTION_OPERATION.getDescription());
-        System.out.println("  " + Help.TRANSACTION_ADD.getDescription());
-        System.out.println("  " + Help.TRANSACTION_REMOVE.getDescription());
-        System.out.println("  " + Help.TRANSACTION_UPDATE.getDescription());
+        System.out.println("  " + OperationDescriptions.TRANSACTION_OPERATION.getDescription());
+        System.out.println("  " + OperationDescriptions.TRANSACTION_ADD.getDescription());
+        System.out.println("  " + OperationDescriptions.TRANSACTION_REMOVE.getDescription());
+        System.out.println("  " + OperationDescriptions.TRANSACTION_UPDATE.getDescription());
         System.out.println();
 
         // --- Бюджеты ---
         System.out.println("💰 БЮДЖЕТЫ:");
-        System.out.println("  " + Help.BUDGET_OPERATION.getDescription());
-        System.out.println("  " + Help.BUDGET_ADD.getDescription());
-        System.out.println("  " + Help.BUDGET_REMOVE.getDescription());
+        System.out.println("  " + OperationDescriptions.BUDGET_OPERATION.getDescription());
+        System.out.println("  " + OperationDescriptions.BUDGET_ADD.getDescription());
+        System.out.println("  " + OperationDescriptions.BUDGET_REMOVE.getDescription());
         System.out.println();
 
         // --- Статистика ---
         System.out.println("📈 СТАТИСТИКА:");
-        System.out.println("  " + Help.STATISTICS_OPERATION.getDescription());
-        System.out.println("  " + Help.STATISTICS_ALL.getDescription());
-        System.out.println("  " + Help.STATISTICS_BY_CATEGORY.getDescription());
+        System.out.println("  " + OperationDescriptions.STATISTICS_OPERATION.getDescription());
+        System.out.println("  " + OperationDescriptions.STATISTICS_ALL.getDescription());
+        System.out.println("  " + OperationDescriptions.STATISTICS_BY_CATEGORY.getDescription());
         System.out.println();
 
         // --- Переводы ---
         System.out.println("🔄 ПЕРЕВОДЫ:");
-        System.out.println("  " + Help.TRANSACTION_OPERATION_SEND_TO_USER.getDescription());
+        System.out.println("  " + OperationDescriptions.TRANSACTION_OPERATION_SEND_TO_USER.getDescription());
         System.out.println();
 
         // --- Управление пользователем ---
         System.out.println("👤 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕМ:");
-        System.out.println("  " + Help.JSON_OPERATION.getDescription());
-        System.out.println("  " + Help.JSON_UPLOAD.getDescription());
-        System.out.println("  " + Help.JSON_UNLOAD.getDescription());
-        System.out.println("  " + Help.DELETE_USER.getDescription());
+        System.out.println("  " + OperationDescriptions.JSON_OPERATION.getDescription());
+        System.out.println("  " + OperationDescriptions.JSON_UPLOAD.getDescription());
+        System.out.println("  " + OperationDescriptions.JSON_UNLOAD.getDescription());
+        System.out.println("  " + OperationDescriptions.DELETE_USER.getDescription());
         System.out.println();
 
         System.out.println("=".repeat(60));
@@ -485,7 +485,7 @@ public class ShowcaseService {
     }
 
     /**
-     * Prints usage examples for all features.
+     * Выводит примеры использования для всех функций.
      */
     public void printExamples() {
         System.out.println("\n" + "=".repeat(60));
@@ -496,58 +496,58 @@ public class ShowcaseService {
         System.out.println("📊 ТРАНЗАКЦИИ:");
 
         System.out.println("  Добавление дохода:");
-        System.out.println("    " + Examples.ADD_INCOME.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.ADD_INCOME.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Добавление расхода:");
-        System.out.println("    " + Examples.ADD_OUTCOME.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.ADD_OUTCOME.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Изменение транзакции:");
-        System.out.println("    " + Examples.CHANGE_TRANSACTION.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.CHANGE_TRANSACTION.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Удаление транзакции:");
-        System.out.println("    " + Examples.DELETE_TRANSACTION.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.DELETE_TRANSACTION.getDescription().replace("\n", "\n    ") + "\n");
 
         // --- Бюджеты ---
         System.out.println("💰 БЮДЖЕТЫ:");
 
         System.out.println("  Добавление бюджета:");
-        System.out.println("    " + Examples.BUDGET_ADD.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.BUDGET_ADD.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Удаление бюджета:");
-        System.out.println("    " + Examples.BUDGET_REMOVE.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.BUDGET_REMOVE.getDescription().replace("\n", "\n    ") + "\n");
 
         // --- Статистика ---
         System.out.println("📈 СТАТИСТИКА:");
 
         System.out.println("  Полная статистика:");
-        System.out.println("    " + Examples.STATS_FULL.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.STATS_FULL.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Статистика по категориям:");
-        System.out.println("    " + Examples.STATS_BY_CATEGORY.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.STATS_BY_CATEGORY.getDescription().replace("\n", "\n    ") + "\n");
 
         // --- Перевод ---
         System.out.println("🔄 ПЕРЕВОД СРЕДСТВ:");
 
         System.out.println("  Пример перевода:");
-        System.out.println("    " + Examples.TRANSFER_TO_USER.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.TRANSFER_TO_USER.getDescription().replace("\n", "\n    ") + "\n");
 
         // --- Управление пользователем ---
         System.out.println("👤 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕМ:");
 
         System.out.println("  Загрузка JSON:");
-        System.out.println("    " + Examples.JSON_LOAD.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.JSON_LOAD.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Сохранение JSON:");
-        System.out.println("    " + Examples.JSON_SAVE.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.JSON_SAVE.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("  Удаление пользователя:");
-        System.out.println("    " + Examples.DELETE_USER.getDescription().replace("\n", "\n    ") + "\n");
+        System.out.println("    " + UsageExamples.DELETE_USER.getDescription().replace("\n", "\n    ") + "\n");
 
         System.out.println("=".repeat(60));
     }
 
     /**
-     * Shows help menu.
+     * Показывает меню справки.
      */
     public void showHelpMenu() {
         System.out.println("\n" + "=".repeat(40));

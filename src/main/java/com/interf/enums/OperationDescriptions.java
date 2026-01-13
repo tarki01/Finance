@@ -1,120 +1,120 @@
 /**
- * Help descriptions for application features.
+ * Описания подсказок для функциональности приложения.
  */
-package com.cli.enums;
+package com.interf.enums;
 
 /**
- * Enumeration of help descriptions for different features.
+ * Перечисление описаний подсказок для различных функций.
  */
-public enum Help {
+public enum OperationDescriptions {
     /**
-     * Transaction operation help.
+     * Подсказка для операции с транзакциями.
      */
     TRANSACTION_OPERATION("Управление транзакциями — позволяет добавлять, "
             + "изменять и удалять записи о доходах и расходах."),
 
     /**
-     * Transaction add help.
+     * Подсказка для добавления транзакции.
      */
     TRANSACTION_ADD("Добавить доход — создаёт новую транзакцию. Необходимо "
             + "указать категорию и сумму."),
 
     /**
-     * Transaction remove help.
+     * Подсказка для удаления транзакции.
      */
     TRANSACTION_REMOVE("Удалить транзакцию — позволяет удалить выбранную "
             + "транзакцию из списка."),
 
     /**
-     * Transaction update help.
+     * Подсказка для изменения транзакции.
      */
     TRANSACTION_UPDATE("Изменить транзакцию — позволяет изменить категорию, "
             + "сумму или тип (доход/расход)."),
 
     /**
-     * Budget operation help.
+     * Подсказка для операции с бюджетом.
      */
     BUDGET_OPERATION("Управление бюджетом — позволяет устанавливать и "
             + "удалять бюджеты по категориям."),
 
     /**
-     * Budget add help.
+     * Подсказка для добавления бюджета.
      */
     BUDGET_ADD("Добавить бюджет — задаёт лимит расходов по выбранной "
             + "категории."),
 
     /**
-     * Budget remove help.
+     * Подсказка для удаления бюджета.
      */
     BUDGET_REMOVE("Удалить бюджет — удаляет ранее установленный бюджет."),
 
     /**
-     * Statistics operation help.
+     * Подсказка для операции со статистикой.
      */
     STATISTICS_OPERATION("Статистика — отображает финансовые показатели и "
             + "анализ по категориям."),
 
     /**
-     * Statistics all help.
+     * Подсказка для полной статистики.
      */
     STATISTICS_ALL("Показать полную статистику — выводит общие суммы "
             + "доходов, расходов и состояние бюджетов."),
 
     /**
-     * Statistics by category help.
+     * Подсказка для статистики по категории.
      */
     STATISTICS_BY_CATEGORY("Показать статистику по категориям и времени — "
             + "позволяет выбрать период и категории для анализа."),
 
     /**
-     * Transaction operation send to user help.
+     * Подсказка для операции перевода пользователю.
      */
     TRANSACTION_OPERATION_SEND_TO_USER("Перевести деньги другому "
             + "пользователю — позволяет перевести средства"
             + " между пользователями."),
 
     /**
-     * JSON operation help.
+     * Подсказка для операции с JSON.
      */
     JSON_OPERATION("Управление пользователем — загрузка, сохранение и "
             + "удаление данных пользователя."),
 
     /**
-     * JSON upload help.
+     * Подсказка для загрузки JSON.
      */
     JSON_UPLOAD("Загрузить данные пользователя — импортирует данные из "
             + "файла."),
 
     /**
-     * JSON unload help.
+     * Подсказка для выгрузки JSON.
      */
     JSON_UNLOAD("Выгрузить данные пользователя — экспортирует данные "
             + "пользователя в файл."),
 
     /**
-     * Delete user help.
+     * Подсказка для удаления пользователя.
      */
     DELETE_USER("Удалить пользователя — полностью удаляет профиль и "
             + "связанные данные.");
 
     /**
-     * Description string.
+     * Строка описания.
      */
     private final String description;
 
     /**
-     * Constructor for Help enum.
+     * Конструктор для перечисления Help.
      *
-     * @param descriptionText the description text
+     * @param descriptionText текст описания
      */
-    Help(final String descriptionText) {
+    OperationDescriptions(final String descriptionText) {
         this.description = descriptionText;
     }
 
     /**
-     * Gets the description.
+     * Получает описание.
      *
-     * @return the description string
+     * @return строку описания
      */
     public String getDescription() {
         return description;

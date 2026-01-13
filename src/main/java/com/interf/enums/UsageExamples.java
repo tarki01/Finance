@@ -1,14 +1,14 @@
 /**
- * Enum with usage examples for different features.
+ * Перечисление с примерами использования для различных функций.
  */
-package com.cli.enums;
+package com.interf.enums;
 
 /**
- * Examples of application usage.
+ * Примеры использования приложения.
  */
-public enum Examples {
+public enum UsageExamples {
     /**
-     * Example of adding income.
+     * Пример добавления дохода.
      */
     ADD_INCOME(
             "Пример добавления дохода:\n"
@@ -20,7 +20,7 @@ public enum Examples {
                     + "в категории \"Зарплата\"."),
 
     /**
-     * Example of adding outcome.
+     * Пример добавления расхода.
      */
     ADD_OUTCOME(
             "Пример добавления расхода:\n"
@@ -32,7 +32,7 @@ public enum Examples {
                     + "в категории \"Продукты\"."),
 
     /**
-     * Example of changing transaction.
+     * Пример изменения транзакции.
      */
     CHANGE_TRANSACTION(
             "Пример изменения существующей транзакции:\n"
@@ -49,7 +49,7 @@ public enum Examples {
                     + "внесённым изменениям."),
 
     /**
-     * Example of deleting transaction.
+     * Пример удаления транзакции.
      */
     DELETE_TRANSACTION(
             "Пример удаления транзакции:\n"
@@ -60,7 +60,7 @@ public enum Examples {
                     + "Результат: транзакция №1 успешно удалена."),
 
     /**
-     * Example of adding budget.
+     * Пример добавления бюджета.
      */
     BUDGET_ADD(
             "Пример добавления бюджета:\n"
@@ -72,7 +72,7 @@ public enum Examples {
                     + "категорию \"Еда\"."),
 
     /**
-     * Example of removing budget.
+     * Пример удаления бюджета.
      */
     BUDGET_REMOVE(
             "Пример удаления бюджета:\n"
@@ -82,7 +82,7 @@ public enum Examples {
                     + "Результат: бюджет категории \"Еда\" удалён."),
 
     /**
-     * Example of full statistics.
+     * Пример полной статистики.
      */
     STATS_FULL(
             "Пример просмотра полной статистики:\n"
@@ -93,7 +93,7 @@ public enum Examples {
                     + "по категориям."),
 
     /**
-     * Example of statistics by category.
+     * Пример статистики по категории.
      */
     STATS_BY_CATEGORY(
             "Пример статистики по категориям и времени:\n"
@@ -108,7 +108,7 @@ public enum Examples {
                     + "выбранный период по указанным категориям."),
 
     /**
-     * Example of transfer to user.
+     * Пример перевода пользователю.
      */
     TRANSFER_TO_USER(
             "Пример перевода средств другому пользователю:\n"
@@ -120,7 +120,7 @@ public enum Examples {
                     + "Результат: пользователю Alex переведено 200."),
 
     /**
-     * Example of JSON load.
+     * Пример загрузки JSON.
      */
     JSON_LOAD(
             "Пример загрузки данных пользователя:\n"
@@ -131,7 +131,7 @@ public enum Examples {
                     + "установлен как текущий."),
 
     /**
-     * Example of JSON save.
+     * Пример сохранения JSON.
      */
     JSON_SAVE(
             "Пример сохранения данных пользователя:\n"
@@ -142,7 +142,7 @@ public enum Examples {
                     + "сохранены."),
 
     /**
-     * Example of user deletion.
+     * Пример удаления пользователя.
      */
     DELETE_USER(
             "Пример удаления пользователя:\n"
@@ -152,23 +152,23 @@ public enum Examples {
                     + "Результат: пользователь и все данные удалены.");
 
     /**
-     * Description string.
+     * Строка описания.
      */
     private final String description;
 
     /**
-     * Constructor for Examples enum.
+     * Конструктор для перечисления Examples.
      *
-     * @param descriptionText the description text
+     * @param descriptionText текст описания
      */
-    Examples(final String descriptionText) {
+    UsageExamples(final String descriptionText) {
         this.description = descriptionText;
     }
 
     /**
-     * Gets the description.
+     * Получает описание.
      *
-     * @return the description string
+     * @return строку описания
      */
     public String getDescription() {
         return description;

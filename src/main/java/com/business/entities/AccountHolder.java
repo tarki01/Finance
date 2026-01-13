@@ -1,4 +1,4 @@
-package com.core.model;
+package com.business.entities;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,16 +7,16 @@ import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
-public class User implements Serializable {
+public class AccountHolder implements Serializable {
     private static final long serialVersionUID = 1L;
     private String username;
     private String password;
-    private Wallet wallet;
+    private FinancialAccount financialAccount;
 
-    public User(String username, String password) {
+    public AccountHolder(String username, String password) {
         setUsername(username);
         setPassword(password);
-        this.wallet = new Wallet();
+        this.financialAccount = new FinancialAccount();
     }
 
     public void setUsername(String username) {
@@ -37,8 +37,8 @@ public class User implements Serializable {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        User user = (User) obj;
-        return username.equals(user.username);
+        AccountHolder accountHolder = (AccountHolder) obj;
+        return username.equals(accountHolder.username);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class User implements Serializable {
     public String toString() {
         return String.format("Пользователь: %s (транзакций: %d, бюджетов: %d)",
                 username,
-                wallet.getTransactions().size(),
-                wallet.getBudgetsCategories().size());
+                financialAccount.getFinancialEntries().size(),
+                financialAccount.getBudgetsCategories().size());
     }
 }
